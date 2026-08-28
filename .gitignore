@@ -1,0 +1,58 @@
+# Python and notebook temporary files
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.venv/
+venv/
+
+# Local configuration and credentials
+config/preferences_colombian.yaml
+config/*.source.yaml
+.env
+.env.*
+*.pem
+*.key
+
+# Sequencing data and participant information
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.sra
+*.tsv
+*.csv
+*.xlsx
+!examples/metadata.template.tsv
+
+# QIIME 2 artifacts, classifiers, and generated results
+*.qza
+*.qzv
+*.biom
+*.classifier
+results/
+outputs/
+artifacts/
+archives/
+pipeline_info/
+*.tar
+*.tar.gz
+*.zip
+
+# Nextflow and local caches
+work/
+nxf_work/
+.nextflow/
+.numba_cache/
+.mpl_cache/
+.qiime2_cache/
+*.log
+
+# Generated figures and workbooks
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.html
+*.xlsx

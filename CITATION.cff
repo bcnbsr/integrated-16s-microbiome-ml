@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "Integrated 16S Microbiome and Machine-Learning Pipeline"
+message: "If you use this repository, please cite the repository and the upstream projects listed in NOTICE.md."
+type: software
+authors:
+  - family-names: "Joumaa"
+    given-names: "Razan"
+repository-code: "https://github.com/REPLACE_WITH_OWNER/integrated-16s-microbiome-ml"
+abstract: >-
+  An integrated workflow for paired-end 16S rRNA processing with QIIME 2 and
+  Nextflow, followed by taxonomy-aware statistical analysis, leakage-controlled
+  machine learning, visualisation, provenance capture, and result archiving.
+keywords:
+  - 16S rRNA
+  - microbiome
+  - QIIME 2
+  - Nextflow
+  - machine learning
+  - reproducible research
+license: "NOASSERTION"

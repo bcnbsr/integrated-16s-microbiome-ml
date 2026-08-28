@@ -1,0 +1,12 @@
+# Core dependencies used by the integration notebook and downstream Python code.
+# QIIME 2 itself is installed through the notebook's conda setup, not pip.
+numpy==2.0.2
+pandas==2.2.2
+scikit-learn==1.6.1
+imbalanced-learn==0.14.2
+matplotlib==3.10.0
+openpyxl
+seaborn
+scipy
+PyYAML
+jupyter

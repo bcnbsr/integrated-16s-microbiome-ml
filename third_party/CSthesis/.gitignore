@@ -1,0 +1,9 @@
+/singularity_images
+/qiime2_results
+/fastq_files
+/fastq_files_1st
+/.nextflow
+/work
+/qiime2_results.zip
+.nextflow.log
+metadata.tsv
