@@ -1,6 +1,6 @@
-# Integrated 16S Microbiome and Machine-Learning Pipeline
+# 16S rRNA Microbiome Analysis and Machine-Learning Pipeline
 
-An end-to-end, reproducible workflow for processing paired-end 16S rRNA amplicon data and evaluating microbiome-based classification models. The project combines a QIIME 2/Nextflow biology workflow with downstream taxonomic preprocessing, statistical analysis, feature selection, machine learning, visualisation, and result archiving.
+An end-to-end, reproducible workflow for processing paired-end 16S rRNA amplicon data and evaluating microbiome-based classification models. The project combines a QIIME 2/Nextflow bioinformatics workflow with downstream taxonomic preprocessing, statistical analysis, feature selection, machine learning, visualisation, and result archiving.
 
 The project is designed for two audiences:
 
