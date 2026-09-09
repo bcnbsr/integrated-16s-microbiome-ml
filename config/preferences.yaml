@@ -20,10 +20,10 @@ input:
   repository: https://github.com/bcnbsr/integrated-16s-microbiome-ml.git
   repository_dir: /content/project/integrated-16s-microbiome-ml
   workflow_dir: workflows/CSthesis
-  # Optional supplemental QIIME metadata. When null or unavailable, the
-  # notebook builds metadata.tsv from the run-participant workbook and
-  # phenotype TSV below.
-  qiime_metadata_source: null
+  # University-provided sequencing metadata TSV stored privately under
+  # input.drive_root. The notebook uses it as the metadata base, then adds
+  # phenotype groups. Never commit this participant-level file to Git.
+  qiime_metadata_source: colombian_metadata.tsv
   phenotype_metadata: participants_v3_corrected_depflag.tsv
   run_participant_map: Colombian-metadata.xlsx
   run_participant_sheet: Meta-data
