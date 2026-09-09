@@ -10,8 +10,8 @@ Included or adapted files:
 
 - `workflows/CSthesis/main.nf`
 - `workflows/CSthesis/nextflow.config`
-- `third_party/CSthesis/README.upstream.md`
-- `third_party/CSthesis/.gitignore`
+- `workflows/CSthesis/README.upstream.md`
+- `workflows/CSthesis/.gitignore`
 
 The workflow defines the QIIME 2 stages, including read import, Cutadapt, DADA2, taxonomy assignment, phylogeny, diversity analysis, and table normalisation.
 
@@ -19,7 +19,7 @@ The workflow defines the QIIME 2 stages, including read import, Cutadapt, DADA2,
 
 Source repository: [R-joumaa/diet-microbiome-depression-ml](https://github.com/R-joumaa/diet-microbiome-depression-ml)
 
-Included files are retained under `third_party/diet-microbiome-depression-ml/`, including the Python analysis scripts, R analysis scripts, and upstream dependency lists.
+Included files are retained under `workflows/diet-microbiome-depression-ml/`, including the Python analysis scripts, R analysis scripts, and upstream dependency lists.
 
 ## Integration notebook
 

@@ -6,7 +6,7 @@ From the repository root, run:
 
 ```bash
 python -m json.tool notebooks/16s_colab_pipeline_tested.ipynb >/dev/null
-python -m py_compile third_party/diet-microbiome-depression-ml/*.py
+python -m py_compile workflows/diet-microbiome-depression-ml/*.py
 ```
 
 The notebook contains Colab shell and magic cells, so ordinary Python compilation is not a complete notebook execution test. Open and run it from a fresh Colab session for an end-to-end check.

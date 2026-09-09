@@ -6,6 +6,9 @@ nextflow.enable.dsl = 2
 params.metadata_url   = "metadata.tsv"
 params.classifier_url = "https://data.qiime2.org/classifiers/sklearn-1.4.2/silva/silva-138-99-nb-classifier.qza"
 params.reads_dir      = null
+params.dada2_dir      = null
+params.branch         = 'asv'
+params.otu_similarity = 0.97
 
 params.outdir         = "${launchDir}/qiime2_results"
 params.barcode_col    = "barcode-sequence"
@@ -17,7 +20,8 @@ params.primer_r       = "TACNVGGGTWTCTAAT"
 //colombian: CCTACGGGNGGCWGCAG, GACTACHVGGGTATCTAATCC
 
 // dada2 trimming parameters
-params.trim_left      = 0
+params.trim_left_f    = 0
+params.trim_left_r    = 0
 
 params.trunc_len_f    = 200
 params.trunc_len_r    = 180
@@ -191,8 +195,8 @@ process DADA2 {
     """
     qiime dada2 denoise-paired \
         --i-demultiplexed-seqs ${demux_qza} \
-        --p-trim-left-f ${params.trim_left} \
-        --p-trim-left-r ${params.trim_left} \
+        --p-trim-left-f ${params.trim_left_f} \
+        --p-trim-left-r ${params.trim_left_r} \
         --p-trunc-len-f ${params.trunc_len_f} \
         --p-trunc-len-r ${params.trunc_len_r} \
         --p-max-ee-f ${params.max_ee} \
@@ -201,6 +205,33 @@ process DADA2 {
         --o-representative-sequences rep-seqs.qza \
         --o-denoising-stats denoising-stats.qza \
         --p-n-threads ${task.cpus}
+    """
+}
+
+/*
+ * Cluster DADA2 representative sequences only for the OTU branch. DADA2 is
+ * the shared prerequisite, so validated restored artifacts work for either
+ * branch without rerunning denoising.
+ */
+process CLUSTER_OTU {
+    publishDir "${params.outdir}/otu", mode: 'copy'
+
+    input:
+    path table
+    path rep_seqs
+
+    output:
+    path "table.qza", emit: table
+    path "rep-seqs.qza", emit: rep_seqs
+
+    script:
+    """
+    qiime vsearch cluster-features-de-novo \
+        --i-table ${table} \
+        --i-sequences ${rep_seqs} \
+        --p-perc-identity ${params.otu_similarity} \
+        --o-clustered-table table.qza \
+        --o-clustered-sequences rep-seqs.qza
     """
 }
 
@@ -422,27 +453,45 @@ process NORMALIZE_TABLE {
  */
 workflow {
 
+    if (!['asv', 'otu'].contains(params.branch)) {
+        error "params.branch must be 'asv' or 'otu', not '${params.branch}'"
+    }
+
     ch_metadata   = file(params.metadata_url)
     ch_classifier = file(params.classifier_url)
-    ch_reads_dir  = file(params.reads_dir)
 
-    RENAME_READS(ch_reads_dir)
+    if (params.dada2_dir) {
+        ch_table = Channel.fromPath("${params.dada2_dir}/table.qza", checkIfExists: true)
+        ch_rep_seqs = Channel.fromPath("${params.dada2_dir}/rep-seqs.qza", checkIfExists: true)
+        ch_stats = Channel.fromPath("${params.dada2_dir}/denoising-stats.qza", checkIfExists: true)
+    } else {
+        ch_reads_dir = file(params.reads_dir)
+        RENAME_READS(ch_reads_dir)
+        IMPORT_PAIRED(RENAME_READS.out)
+        VISUALIZE_DEMUX(IMPORT_PAIRED.out)
+        CUTADAPT(IMPORT_PAIRED.out)
+        DADA2(CUTADAPT.out.trimmed_seqs)
+        ch_table = DADA2.out.table
+        ch_rep_seqs = DADA2.out.rep_seqs
+        ch_stats = DADA2.out.stats
+    }
 
-    IMPORT_PAIRED(RENAME_READS.out)
+    DADA2_STATS_VIZ(ch_stats)
 
-    VISUALIZE_DEMUX(IMPORT_PAIRED.out)
+    if (params.branch == 'otu') {
+        CLUSTER_OTU(ch_table, ch_rep_seqs)
+        ch_branch_table = CLUSTER_OTU.out.table
+        ch_branch_rep_seqs = CLUSTER_OTU.out.rep_seqs
+    } else {
+        ch_branch_table = ch_table
+        ch_branch_rep_seqs = ch_rep_seqs
+    }
 
-    CUTADAPT(IMPORT_PAIRED.out)
-
-    DADA2(CUTADAPT.out.trimmed_seqs)
-
-    DADA2_STATS_VIZ(DADA2.out.stats)
-
-    PHYLOGENY(DADA2.out.rep_seqs)
+    PHYLOGENY(ch_branch_rep_seqs)
 
     CORE_DIVERSITY(
         PHYLOGENY.out.rooted_tree,
-        DADA2.out.table,
+        ch_branch_table,
         ch_metadata
     )
 
@@ -452,24 +501,23 @@ workflow {
     )
 
     CHAO1_ALPHA_DIVERSITY(
-        DADA2.out.table,
+        ch_branch_table,
         PHYLOGENY.out.rooted_tree,
         ch_metadata
     )
 
     CLASSIFY_TAXONOMY(
-        DADA2.out.rep_seqs,
+        ch_branch_rep_seqs,
         ch_classifier
     )
 
     BARPLOT(
-        DADA2.out.table,
+        ch_branch_table,
         CLASSIFY_TAXONOMY.out,
         ch_metadata
     )
 
     NORMALIZE_TABLE(
-        DADA2.out.table
+        ch_branch_table
     )
 }
-

@@ -6,7 +6,7 @@ The workflow has two connected layers.
 
 ### Biology layer
 
-The Nextflow/QIIME 2 layer imports paired-end reads, removes primers, denoises with DADA2, assigns taxonomy, filters features, builds a phylogeny, calculates diversity, and exports tables. The ASV result is the primary output. The optional OTU branch clusters the ASVs at the configured identity threshold for comparison.
+The Nextflow/QIIME 2 layer imports paired-end reads, removes primers, denoises with DADA2, assigns taxonomy, filters features, builds a phylogeny, calculates diversity, and exports tables. The ASV result is the primary output. The optional OTU branch clusters the ASVs at the configured identity threshold for comparison; this branch routing is performed by Nextflow.
 
 ### Statistical and ML layer
 
@@ -17,8 +17,8 @@ The downstream layer joins the taxonomic table with phenotype metadata, applies 
 - `notebooks/16s_colab_pipeline_tested.ipynb` orchestrates the complete run.
 - `workflows/CSthesis/main.nf` contains the biology processes.
 - `workflows/CSthesis/nextflow.config` defines the upstream container and reporting defaults.
-- `third_party/diet-microbiome-depression-ml/` contains the downstream analysis scripts used by the notebook.
-- `config/preferences_colombian.example.yaml` is the safe template for runtime parameters.
+- `workflows/diet-microbiome-depression-ml/` contains the downstream analysis scripts used by the notebook.
+- `config/preferences.yaml` is the active runtime configuration read directly by the Colab notebook after it clones this repository.
 
 ## ASV and OTU branches
 

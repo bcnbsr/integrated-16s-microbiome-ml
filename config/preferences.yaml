@@ -1,4 +1,5 @@
-# Copy this file to /content/preferences_colombian.yaml in Google Colab.
+# Active default configuration for the Colab notebook. The notebook clones this
+# repository and reads this file directly; no preferences-file upload is needed.
 # Keep private data, participant mappings, archives, and credentials outside Git.
 # Change run.branch to exactly one of: asv, otu.
 
@@ -16,16 +17,19 @@ biology:
 
 input:
   drive_root: /content/drive/MyDrive/ML_colombian_colab
-  repository: https://github.com/Luna-Maan/CSthesis.git
-  repository_dir: /content/project/CSthesis
+  repository: https://github.com/bcnbsr/integrated-16s-microbiome-ml.git
+  repository_dir: /content/project/integrated-16s-microbiome-ml
+  workflow_dir: workflows/CSthesis
   qiime_metadata_source: metadata_files/colombian_metadata.tsv
   phenotype_metadata: participants_v3_corrected_depflag.tsv
   run_participant_map: Colombian-metadata.xlsx
   run_participant_sheet: Meta-data
+  run_id_column: Run
+  run_participant_id_column: Participant_id
   download_from_sra: true
 
 reads:
-  directory: /content/project/CSthesis/fastq_full
+  directory: /content/project/data/fastq_full
   layout: paired_end
   patterns:
     forward: '^(?P<sample_id>.+?)_1\.(?:fastq|fq)(?:\.gz)?$'
@@ -36,6 +40,8 @@ metadata:
   phenotype_id_column: participant_id
   phenotype_group_column: dep_flag_corrected
   group_column: group
+  participant_id_prefix: sub-
+  participant_id_alias_prefixes: [c16S, MIC]
   label_map:
     "0": healthy
     "1": depressive
@@ -102,6 +108,11 @@ diversity:
 
 ml:
   enabled: true
+  implementation_dir: workflows/diet-microbiome-depression-ml
+  expected_sample_count: 88
+  diet_columns: [Prot, SatFat, Poly_InsFat, Chol, Carb, Fiber]
+  negative_class: "0"
+  positive_class: "1"
   selector: original_3_method
   anova_p_cutoff: 0.05
   mutual_information_percentile: 95

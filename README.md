@@ -39,12 +39,11 @@ The current tested configuration uses the `asv` branch. Set `run.branch` to `otu
 ├── notebooks/
 │   └── 16s_colab_pipeline_tested.ipynb
 ├── config/
-│   └── preferences_colombian.example.yaml
+│   └── preferences.yaml
 ├── workflows/
 │   └── CSthesis/
 │       ├── main.nf
 │       └── nextflow.config
-├── third_party/
 │   └── diet-microbiome-depression-ml/
 │       ├── dataset1_ancombc2_analysis.R
 │       ├── dataset1_diet_correlation.py
@@ -61,7 +60,7 @@ The current tested configuration uses the `asv` branch. Set `run.branch` to `otu
     └── metadata.template.tsv
 ```
 
-The files under `workflows/CSthesis` and `third_party/diet-microbiome-depression-ml` are retained so that the code used by the two source repositories is present and inspectable. Their provenance and current licensing status are documented in [NOTICE.md](NOTICE.md) and [LICENSING.md](LICENSING.md).
+The files under `workflows/CSthesis` and `workflows/diet-microbiome-depression-ml` are retained so that the code used by the two source repositories is present and inspectable. Their provenance and current licensing status are documented in [NOTICE.md](NOTICE.md) and [LICENSING.md](LICENSING.md).
 
 ## Quick start: Google Colab
 
@@ -82,7 +81,7 @@ Do not commit participant-level metadata, sequencing reads, QIIME artifacts, arc
 
 ### 2. Configure the run
 
-Copy `config/preferences_colombian.example.yaml` to `/content/preferences_colombian.yaml` in Colab, then edit only the values appropriate for your data. The notebook reads this file near the beginning of the run.
+The notebook clones this public integration repository near the beginning of the run and reads its active `config/preferences.yaml` directly. No preferences-file upload is required. Make configuration changes in that tracked file before starting a fresh Colab runtime.
 
 The most important settings are:
 
@@ -106,7 +105,7 @@ The notebook may ask for access to Google Drive. This is required only for the c
 
 ### 4. Choose the biology branch
 
-The `asv` branch uses the DADA2 feature table directly. The `otu` branch clusters the ASVs with VSEARCH at the configured similarity, currently `0.97`. The user-facing branch name remains `otu`; compatibility translation is handled inside the notebook where necessary.
+The `asv` branch uses the DADA2 feature table directly. The `otu` branch clusters the ASVs with VSEARCH at the configured similarity, currently `0.97`. Nextflow owns this branch routing; the notebook verifies the selected branch's published artifacts before export and ML preparation.
 
 ### 5. Inspect the outputs
 
@@ -217,7 +216,7 @@ Confirm that the ML repository snapshot is present and that the Python dependenc
 
 ### The run stops during metadata validation
 
-Compare the metadata column names and sample identifiers with `config/preferences_colombian.example.yaml`. The QIIME `sample-id` values and the phenotype participant mapping must be consistent before modelling.
+Compare the metadata column names and sample identifiers with `config/preferences.yaml`. The QIIME `sample-id` values and the phenotype participant mapping must be consistent before modelling.
 
 ## Project status
 
