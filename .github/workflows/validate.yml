@@ -18,18 +18,20 @@ jobs:
         run: python -m pip install --disable-pip-version-check PyYAML
       - name: Validate notebook JSON
         run: python -m json.tool notebooks/16s_colab_pipeline_tested.ipynb >/dev/null
-      - name: Compile copied Python sources
-        run: python -m py_compile third_party/diet-microbiome-depression-ml/*.py
-      - name: Validate example configuration
+      - name: Compile bundled Python sources
+        run: python -m py_compile workflows/diet-microbiome-depression-ml/*.py
+      - name: Validate active configuration
         run: |
           python - <<'PY'
           from pathlib import Path
           import yaml
 
-          path = Path("config/preferences_colombian.example.yaml")
+          path = Path("config/preferences.yaml")
           config = yaml.safe_load(path.read_text())
           assert config["run"]["branch"] in {"asv", "otu"}
           assert config["run"]["qiime2_release"]
+          assert config["input"]["workflow_dir"] == "workflows/CSthesis"
+          assert config["ml"]["implementation_dir"] == "workflows/diet-microbiome-depression-ml"
           assert config["ml"]["random_states"]
           print("Configuration is valid")
           PY
