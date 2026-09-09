@@ -71,9 +71,8 @@ The supported entry point is `notebooks/16s_colab_pipeline_tested.ipynb`.
 Before starting a run, prepare:
 
 - paired-end FASTQ files, following the configured `_1`/`_2` naming convention;
-- a QIIME 2 metadata file containing a `sample-id` column;
 - phenotype metadata containing the configured participant identifier and group columns;
-- the participant mapping workbook if the selected data source needs it;
+- the participant mapping workbook containing the configured run and participant columns;
 - a SILVA 138 classifier, or permission for the notebook to download it;
 - optionally, a previously created ASV-results archive containing the DADA2 artifacts.
 
@@ -87,7 +86,7 @@ The most important settings are:
 
 - `run.branch`: `asv` or `otu`;
 - `run.qiime2_release`: the QIIME 2 release to install;
-- `input.qiime_metadata_source`: the relative location of QIIME metadata;
+- `input.qiime_metadata_source`: an optional relative location of supplemental QIIME metadata. Leave it `null` to build `metadata.tsv` from the run-participant workbook and phenotype metadata;
 - `input.phenotype_metadata`: the phenotype metadata filename;
 - `reads.patterns`: the forward and reverse FASTQ filename patterns;
 - `primers`: primer sequences and whether primer removal is enabled;

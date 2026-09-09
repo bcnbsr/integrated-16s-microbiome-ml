@@ -20,7 +20,10 @@ input:
   repository: https://github.com/bcnbsr/integrated-16s-microbiome-ml.git
   repository_dir: /content/project/integrated-16s-microbiome-ml
   workflow_dir: workflows/CSthesis
-  qiime_metadata_source: metadata_files/colombian_metadata.tsv
+  # Optional supplemental QIIME metadata. When null or unavailable, the
+  # notebook builds metadata.tsv from the run-participant workbook and
+  # phenotype TSV below.
+  qiime_metadata_source: null
   phenotype_metadata: participants_v3_corrected_depflag.tsv
   run_participant_map: Colombian-metadata.xlsx
   run_participant_sheet: Meta-data
