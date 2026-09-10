@@ -74,7 +74,7 @@ Before starting a run, prepare:
 - phenotype metadata containing the configured participant identifier and group columns;
 - the participant mapping workbook containing the configured run and participant columns;
 - a SILVA 138 classifier, or permission for the notebook to download it;
-- optionally, a previously created ASV-results archive containing the DADA2 artifacts.
+- optionally, a previously created full-results archive for the selected ASV or OTU branch.
 
 Do not commit participant-level metadata, sequencing reads, QIIME artifacts, archives, or generated results to a public repository. Keep them in private storage and provide their paths through the configuration file.
 
@@ -98,7 +98,7 @@ The example configuration uses `/content` paths because that is the layout expec
 
 ### 3. Run the notebook in order
 
-Run the cells from top to bottom. The notebook contains explicit checks for missing tools and invalid QIIME artifacts. If an earlier run produced valid DADA2 artifacts and an archive was configured, the archive restoration step can reuse them; otherwise, the Nextflow biology workflow is run.
+Run the cells from top to bottom. The notebook contains explicit checks for missing tools and invalid QIIME artifacts. If a configured archive contains the required outputs for the selected branch, it is restored as a trusted full-results checkpoint and all Nextflow work is skipped. Without a valid full archive, the notebook runs the biology workflow.
 
 The notebook may ask for access to Google Drive. This is required only for the configured private inputs, caches, archives, and result backup locations.
 
@@ -207,7 +207,7 @@ Run the environment setup cells again and confirm that the QIIME 2 environment's
 
 ### DADA2 artifacts are missing or invalid
 
-Check that the archive contains valid `dada2/table.qza`, `dada2/rep-seqs.qza`, and `dada2/denoising-stats.qza` files. If any artifact fails `qiime tools peek` or QIIME validation, rerun the DADA2 stage rather than using a partial archive.
+Check that the archive contains valid DADA2 artifacts and the required taxonomy, phylogeny, diversity, alpha-diversity, and normalized-table outputs for the selected branch. The notebook intentionally stops rather than recomputing from a partial archive.
 
 ### The ML stage cannot find a module
 

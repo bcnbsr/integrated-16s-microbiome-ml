@@ -31,7 +31,7 @@ Save a small run manifest containing:
 2. Copy the private preferences file into the Colab runtime.
 3. Provide private input data and the classifier through the configured paths.
 4. Run cells from top to bottom without relying on an old notebook kernel.
-5. Confirm that the DADA2 artifacts validate before using archive restoration.
+5. Confirm that the selected branch's complete archived results validate before using archive restoration.
 6. Confirm that `vsearch`, `mafft`, and `FastTree` are visible before the corresponding steps.
 7. Compare the generated trace, key table dimensions, and model-output schemas with the expected run manifest.
 
