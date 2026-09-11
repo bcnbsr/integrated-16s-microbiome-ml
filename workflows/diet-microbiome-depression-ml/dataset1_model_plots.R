@@ -3,7 +3,7 @@
 # ML reporting plots for the selected ASV or OTU branch.
 # Linear models use signed coefficients; tree models use feature importance.
 
-required_packages <- c("dplyr", "ggplot2", "pROC")
+required_packages <- c("dplyr", "ggplot2", "pROC", "patchwork")
 missing_packages <- required_packages[
   !vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)
 ]
@@ -14,6 +14,7 @@ if (length(missing_packages) > 0) {
 library(dplyr)
 library(ggplot2)
 library(pROC)
+library(patchwork)
 
 args <- commandArgs(trailingOnly = TRUE)
 results_dir <- if (length(args) >= 1) args[[1]] else file.path("results", "dataset1")
@@ -140,33 +141,186 @@ make_attribution_plot <- function(method, attribution_type, file_stem) {
     filter(Model == method, `Input features` == "Diet + taxa", `Attribution type` == attribution_type) %>%
     mutate(Split = as.integer(Split), In_top20_this_split = `Rank by absolute attribution` <= 20)
   frequency <- data %>% group_by(`Feature ID`, `Feature name`, `Feature group`) %>%
-    summarise(Splits_in_top20 = sum(In_top20_this_split), .groups = "drop") %>% filter(Splits_in_top20 >= 2)
+    summarise(
+      Splits_in_top20 = sum(In_top20_this_split),
+      Mean_absolute_attribution = mean(abs(Attribution), na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    filter(Splits_in_top20 >= 2) %>%
+    rowwise() %>%
+    mutate(Short_feature_name = short_taxon_label(`Feature name`, `Feature group`)) %>%
+    ungroup()
   if (nrow(frequency) == 0) {
     warning("No ", method, " features were in the top 20 for at least two splits; no attribution plot was created.")
     return(invisible(NULL))
   }
-  plot_data <- data %>% inner_join(frequency, by = c("Feature ID", "Feature name", "Feature group")) %>%
+
+  # A genus can contain several ASVs. Display one deterministic representative
+  # so the requested genus-only labels remain unique and scientifically traceable.
+  representatives <- frequency %>%
+    arrange(
+      desc(Splits_in_top20),
+      desc(Mean_absolute_attribution),
+      `Feature ID`
+    ) %>%
+    group_by(`Feature group`, Short_feature_name) %>%
+    slice_head(n = 1) %>%
+    ungroup()
+
+  plot_data <- data %>%
+    inner_join(
+      representatives %>%
+        select(
+          `Feature ID`,
+          `Feature name`,
+          `Feature group`,
+          Short_feature_name,
+          Splits_in_top20
+        ),
+      by = c("Feature ID", "Feature name", "Feature group")
+    ) %>%
     filter(In_top20_this_split) %>%
-    rowwise() %>% mutate(Short_feature_name = short_taxon_label(`Feature name`, `Feature group`)) %>% ungroup()
-  label_table <- plot_data %>% distinct(`Feature ID`, Short_feature_name, Splits_in_top20, `Feature group`) %>%
-    arrange(desc(Splits_in_top20), `Feature group`, Short_feature_name) %>%
-    mutate(Feature_label = make.unique(paste0(Short_feature_name, "\n(", Splits_in_top20, "/5)")), Feature_y = rev(seq_len(n())))
-  plot_data <- plot_data %>% inner_join(label_table %>% select(`Feature ID`, Feature_label, Feature_y), by = "Feature ID") %>%
-    mutate(Split_offset = (Split - 3) * 0.13, Plot_y = Feature_y + Split_offset)
-  ranges <- plot_data %>% group_by(Feature_label, Feature_y) %>% summarise(xmin = min(Attribution), xmax = max(Attribution), .groups = "drop")
-  display_labels <- label_table %>% arrange(Feature_y)
+    mutate(
+      Feature_label = paste0(
+        Short_feature_name,
+        "\n(",
+        Splits_in_top20,
+        "/5)"
+      )
+    )
+
+  feature_order <- plot_data %>%
+    distinct(
+      `Feature ID`,
+      Feature_label,
+      Splits_in_top20,
+      `Feature group`
+    ) %>%
+    arrange(
+      desc(Splits_in_top20),
+      `Feature group`,
+      Feature_label
+    ) %>%
+    pull(Feature_label)
+
+  plot_data$Feature_label <- factor(
+    plot_data$Feature_label,
+    levels = feature_order
+  )
+
+  plot_data <- plot_data %>%
+    mutate(
+      Feature_x = as.numeric(Feature_label),
+      Split_offset = case_when(
+        Split == 1 ~ -0.18,
+        Split == 2 ~ -0.09,
+        Split == 3 ~  0.00,
+        Split == 4 ~  0.09,
+        Split == 5 ~  0.18,
+        TRUE ~ 0.00
+      ),
+      Plot_x = Feature_x + Split_offset
+    )
+
+  feature_levels <- levels(plot_data$Feature_label)
+  base_colours <- setNames(
+    hcl.colors(length(feature_levels), palette = "Dynamic"),
+    feature_levels
+  )
+  column_colours <- setNames(
+    grDevices::adjustcolor(base_colours, alpha.f = 0.30),
+    feature_levels
+  )
+  plot_data <- plot_data %>%
+    mutate(Square_colour = base_colours[as.character(Feature_label)])
+
+  column_data <- plot_data %>%
+    group_by(Feature_label, Feature_x) %>%
+    summarise(
+      ymin = min(Attribution, na.rm = TRUE),
+      ymax = max(Attribution, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      xmin = Feature_x - 0.23,
+      xmax = Feature_x + 0.23,
+      Column_colour = column_colours[as.character(Feature_label)],
+      Line_colour = base_colours[as.character(Feature_label)]
+    )
+
+  y_data_min <- min(0, column_data$ymin, na.rm = TRUE)
+  y_data_max <- max(column_data$ymax, na.rm = TRUE)
+  y_range <- y_data_max - y_data_min
+  if (y_range == 0) y_range <- 1
+  y_plot_min <- y_data_min - 0.08 * y_range
+  y_plot_max <- y_data_max + 0.08 * y_range
+
   quantity_label <- if (attribution_type == "coefficient") paste(method, "coefficient") else paste(method, "feature importance")
   plot_title <- if (attribution_type == "coefficient") paste(method, "Coefficients Across Five Repeated Splits") else paste(method, "Feature Importances Across Five Repeated Splits")
+
   attribution_plot <- ggplot() +
-    geom_vline(xintercept = 0, linetype = "dashed", linewidth = 0.5, colour = "grey45") +
-    geom_segment(data = ranges, aes(x = xmin, xend = xmax, y = Feature_y, yend = Feature_y), linewidth = 0.8, colour = "grey55") +
-    geom_point(data = plot_data, aes(x = Attribution, y = Plot_y, fill = factor(Split)), shape = 21, size = 5.8, colour = "black", stroke = 0.45) +
-    geom_text(data = plot_data, aes(x = Attribution, y = Plot_y, label = Split), size = 2.8, fontface = "bold") +
-    scale_fill_manual(values = split_colours, breaks = as.character(1:5)) +
-    scale_y_continuous(breaks = display_labels$Feature_y, labels = display_labels$Feature_label) +
-    labs(title = plot_title, x = quantity_label, y = "Feature", fill = "Split") +
-    theme_thesis_clean() + theme(axis.text.y = element_text(size = 10), legend.position = "bottom")
-  save_plot_pair(attribution_plot, file_stem, 10, max(6.5, 0.42 * nrow(label_table) + 2.5))
+    geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.5, colour = "grey45") +
+    geom_rect(
+      data = column_data,
+      aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = Column_colour),
+      colour = NA
+    ) +
+    geom_segment(
+      data = column_data,
+      aes(x = Feature_x, xend = Feature_x, y = ymin, yend = ymax, colour = Line_colour),
+      linewidth = 0.7,
+      alpha = 0.75
+    ) +
+    geom_point(
+      data = plot_data,
+      aes(x = Plot_x, y = Attribution, fill = Square_colour),
+      shape = 22,
+      size = 7.2,
+      colour = "black",
+      stroke = 0.5
+    ) +
+    geom_text(
+      data = plot_data,
+      aes(x = Plot_x, y = Attribution, label = Split),
+      size = 3.2,
+      fontface = "bold",
+      colour = "black"
+    ) +
+    scale_fill_identity() +
+    scale_colour_identity() +
+    scale_x_continuous(
+      breaks = seq_along(feature_levels),
+      labels = feature_levels,
+      limits = c(0.5, length(feature_levels) + 0.5),
+      expand = expansion(mult = c(0.01, 0.02))
+    ) +
+    coord_cartesian(ylim = c(y_plot_min, y_plot_max), clip = "off") +
+    labs(title = plot_title, x = "Feature", y = quantity_label) +
+    theme_thesis_clean() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 10),
+      legend.position = "none",
+      plot.margin = margin(10, 10, 5, 10)
+    )
+
+  split_key_data <- data.frame(
+    Split = 1:5,
+    x = 1:5,
+    y_square = 1.0,
+    y_text = 0.18,
+    label = paste("Split", 1:5)
+  )
+  split_key_plot <- ggplot(split_key_data, aes(x = x, y = y_square)) +
+    geom_point(shape = 22, size = 4.8, fill = "grey78", colour = "black", stroke = 0.5) +
+    geom_text(aes(label = Split), size = 2.4, fontface = "bold", colour = "black") +
+    geom_text(aes(y = y_text, label = label), size = 2.8, colour = "black") +
+    coord_cartesian(xlim = c(0.5, 5.5), ylim = c(0, 1.25), clip = "off") +
+    theme_void() +
+    theme(plot.margin = margin(0, 0, 0, 35))
+
+  bottom_row <- split_key_plot + plot_spacer() + plot_layout(widths = c(2.8, 8))
+  final_attribution_plot <- attribution_plot / bottom_row + plot_layout(heights = c(14, 1.8))
+  save_plot_pair(final_attribution_plot, file_stem, 11, 7.2)
 }
 
 make_attribution_plot("SVM", "coefficient", "04_SVM_Coefficients_Across_Five_Repeated_Splits")
